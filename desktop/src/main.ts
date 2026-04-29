@@ -10,6 +10,8 @@ if (!app) {
 let items: ClipItem[] = [];
 let query = '';
 let selectedType: 'all' | 'text' | 'image' = 'all';
+let previewItemId = '';
+let previewZoom = 1;
 let toastTimer = 0;
 
 const formatDate = (value: number) =>
@@ -59,10 +61,15 @@ const showToast = (message: string) => {
   toastTimer = window.setTimeout(() => toast.classList.remove('is-visible'), 1800);
 };
 
+const setPreviewZoom = (nextZoom: number) => {
+  previewZoom = Math.min(5, Math.max(0.25, nextZoom));
+  render();
+};
+
 const renderItem = (item: ClipItem) => {
   const preview =
     item.type === 'image'
-      ? `<img src="${item.preview}" alt="保存された画像クリップ" />`
+      ? `<button type="button" class="image-preview-button" data-action="preview" aria-label="画像を大きく表示"><img src="${item.preview}" alt="保存された画像クリップ" /></button>`
       : `<p>${escapeHtml(item.preview || '(空のテキスト)')}</p>`;
 
   return `
@@ -85,6 +92,7 @@ const renderItem = (item: ClipItem) => {
 
 const render = () => {
   const filtered = visibleItems();
+  const previewItem = items.find((item) => item.id === previewItemId && item.type === 'image');
   app.innerHTML = `
     <main class="shell">
       <header class="topbar">
@@ -127,6 +135,30 @@ const render = () => {
               </div>`
         }
       </section>
+      ${
+        previewItem
+          ? `<div class="preview-modal" data-preview-backdrop role="dialog" aria-modal="true" aria-label="画像プレビュー">
+              <div class="preview-dialog">
+                <div class="preview-header">
+                  <div>
+                    <strong>Image</strong>
+                    <span>${formatDate(previewItem.updatedAt)} / ${formatBytes(previewItem.size)}</span>
+                  </div>
+                  <div class="preview-tools" aria-label="ズーム操作">
+                    <button type="button" data-preview-zoom="out" aria-label="縮小">-</button>
+                    <button type="button" data-preview-zoom="fit" aria-label="画面に合わせる">Fit</button>
+                    <span>${Math.round(previewZoom * 100)}%</span>
+                    <button type="button" data-preview-zoom="in" aria-label="拡大">+</button>
+                  </div>
+                  <button type="button" data-preview-close aria-label="閉じる">Close</button>
+                </div>
+                <div class="preview-canvas">
+                  <img src="${previewItem.content}" alt="保存された画像クリップの拡大プレビュー" style="width: ${previewZoom * 100}%; max-width: none; max-height: none;" />
+                </div>
+              </div>
+            </div>`
+          : ''
+      }
       <div class="toast" data-toast></div>
     </main>
   `;
@@ -161,9 +193,38 @@ app.addEventListener('click', async (event) => {
     return;
   }
 
-  const action = target.dataset.action;
-  const id = target.closest<HTMLElement>('[data-id]')?.dataset.id;
+  if (target.matches('[data-preview-close]') || target.matches('[data-preview-backdrop]')) {
+    previewItemId = '';
+    previewZoom = 1;
+    render();
+    return;
+  }
+
+  const zoomAction = target.closest<HTMLElement>('[data-preview-zoom]')?.dataset.previewZoom;
+  if (zoomAction === 'in') {
+    setPreviewZoom(previewZoom + 0.25);
+    return;
+  }
+  if (zoomAction === 'out') {
+    setPreviewZoom(previewZoom - 0.25);
+    return;
+  }
+  if (zoomAction === 'fit') {
+    setPreviewZoom(1);
+    return;
+  }
+
+  const actionTarget = target.closest<HTMLElement>('[data-action]');
+  const action = actionTarget?.dataset.action;
+  const id = actionTarget?.closest<HTMLElement>('[data-id]')?.dataset.id;
   if (!action || !id) return;
+
+  if (action === 'preview') {
+    previewItemId = id;
+    previewZoom = 1;
+    render();
+    return;
+  }
 
   if (action === 'copy') {
     await window.clipHistory.copy(id);
@@ -180,8 +241,27 @@ app.addEventListener('click', async (event) => {
 
 window.clipHistory.onChanged((nextItems) => {
   items = nextItems;
+  if (previewItemId && !items.some((item) => item.id === previewItemId)) previewItemId = '';
   render();
 });
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && previewItemId) {
+    previewItemId = '';
+    previewZoom = 1;
+    render();
+  }
+});
+
+app.addEventListener(
+  'wheel',
+  (event) => {
+    if (!previewItemId || !event.ctrlKey) return;
+    event.preventDefault();
+    setPreviewZoom(previewZoom + (event.deltaY < 0 ? 0.25 : -0.25));
+  },
+  { passive: false },
+);
 
 items = await window.clipHistory.list();
 render();

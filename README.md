@@ -8,37 +8,50 @@
 npm install
 ```
 
-開発用にアプリを起動します。
+デスクトップアプリを開発用に起動します。
 
 ```sh
 npm run dev
 ```
 
-ビルド済みのアプリを起動する場合は、先にビルドしてから起動します。
+TUIを起動します。
 
 ```sh
-npm run build
-npm start
+npm run tui
+```
+
+LinuxでTUIからクリップボードへコピーする場合は、環境に合わせて `wl-clipboard`、`xclip`、`xsel` のいずれかを入れておきます。
+
+TUIでは `j/k` または矢印キーで移動、`g/G` で先頭/末尾へ移動、`/` で検索、`enter` でコピーして終了、`r` で再読み込み、`q` で終了できます。
+
+macOS向けのデスクトップアプリを作成します。
+
+```sh
+npm run dist
+open desktop/dist/mac-arm64/Clip\ History.app
 ```
 
 ## 開発のしかた
 
-通常の開発では次のコマンドを使います。
+デスクトップアプリのコードは `desktop/` にあります。
 
 ```sh
-npm run dev
+npm run dev -w desktop
+npm run build -w desktop
+npm run dist -w desktop
 ```
 
-このコマンドで Vite の開発サーバーと Electron が同時に起動します。
+TUIのコードは `tui/` にあります。
 
-配布用のビルドを確認する場合は次のコマンドを使います。
+```sh
+npm run dev -w tui
+npm run build -w tui
+```
+
+TUIが読む履歴JSONの既定値は、デスクトップアプリが書き込む `app.getPath('userData')/clipboard-history.json` と同じ場所です。通常はmacOSでは `~/Library/Application Support/Clip History/clipboard-history.json`、Linuxでは `${XDG_CONFIG_HOME:-~/.config}/Clip History/clipboard-history.json` です。別の場所を読む場合は `CLIP_HISTORY_PATH` を指定します。
+
+全体をビルドする場合は次のコマンドを使います。
 
 ```sh
 npm run build
-```
-
-macOS 向けのアプリ出力を作る場合は次のコマンドを使います。
-
-```sh
-npm run dist
 ```

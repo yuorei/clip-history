@@ -214,6 +214,17 @@ h1 {
   place-items: center;
 }
 
+.image-preview-button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .clip.image img {
   max-width: 100%;
   max-height: 158px;
@@ -301,4 +312,89 @@ h1 {
 .toast.is-visible {
   transform: translateY(0);
   opacity: 1;
+}
+
+.preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(13, 18, 24, 0.62);
+}
+
+.preview-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1120px, 94vw);
+  height: min(760px, 90vh);
+  overflow: hidden;
+  border: 1px solid rgba(216, 222, 230, 0.75);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.preview-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.preview-header div {
+  display: grid;
+  gap: 3px;
+}
+
+.preview-header span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.preview-tools {
+  display: grid;
+  grid-template-columns: 38px 52px 54px 38px;
+  gap: 6px;
+  align-items: center;
+}
+
+.preview-tools span {
+  justify-self: center;
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-tools button {
+  min-height: 32px;
+}
+
+.preview-canvas {
+  min-height: 0;
+  padding: 18px;
+  overflow: auto;
+  background:
+    linear-gradient(45deg, #e8edf3 25%, transparent 25%),
+    linear-gradient(-45deg, #e8edf3 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e8edf3 75%),
+    linear-gradient(-45deg, transparent 75%, #e8edf3 75%),
+    #f7f9fb;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+  background-size: 20px 20px;
+}
+
+.preview-canvas img {
+  display: block;
+  margin: auto;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: var(--shadow);
 }
