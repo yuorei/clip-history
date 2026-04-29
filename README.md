@@ -48,7 +48,7 @@ npm run dev -w tui
 npm run build -w tui
 ```
 
-TUIが読む履歴JSONは、macOSでは `~/Library/Application Support/clip-history/clipboard-history.json`、Linuxでは `${XDG_CONFIG_HOME:-~/.config}/clip-history/clipboard-history.json` です。別の場所を読む場合は `CLIP_HISTORY_PATH` を指定します。
+TUIが読む履歴JSONの既定値は、デスクトップアプリが書き込む `app.getPath('userData')/clipboard-history.json` と同じ場所です。通常はmacOSでは `~/Library/Application Support/Clip History/clipboard-history.json`、Linuxでは `${XDG_CONFIG_HOME:-~/.config}/Clip History/clipboard-history.json` です。別の場所を読む場合は `CLIP_HISTORY_PATH` を指定します。
 
 全体をビルドする場合は次のコマンドを使います。
 

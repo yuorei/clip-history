@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -33,10 +33,10 @@ const dim = '\x1b[2m';
 
 function getHistoryPath() {
   if (process.env.CLIP_HISTORY_PATH) return process.env.CLIP_HISTORY_PATH;
-  if (isMac) return join(homedir(), 'Library/Application Support/clip-history/clipboard-history.json');
+  if (isMac) return join(homedir(), 'Library/Application Support/Clip History/clipboard-history.json');
   if (isLinux) {
     const configHome = process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
-    return join(configHome, 'clip-history', 'clipboard-history.json');
+    return join(configHome, 'Clip History', 'clipboard-history.json');
   }
   return join(homedir(), '.clip-history', 'clipboard-history.json');
 }
@@ -78,9 +78,16 @@ function formatBytes(bytes: number) {
 }
 
 function truncate(value: string, width: number) {
-  const singleLine = value.replace(/\s+/g, ' ').trim();
+  const singleLine = sanitizeTerminalText(value).replace(/\s+/g, ' ').trim();
   if (singleLine.length <= width) return singleLine.padEnd(width, ' ');
   return `${singleLine.slice(0, Math.max(0, width - 1))}…`;
+}
+
+function sanitizeTerminalText(value: string) {
+  return value
+    .replace(/\x1b\][^\x07]*(?:\x07|\x1b\\)/gu, '')
+    .replace(/\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-Z\\-_]/gu, '')
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/gu, '');
 }
 
 function render() {
@@ -171,7 +178,11 @@ async function copyImage(dataUrl: string) {
   if (!isMac) throw new Error(`Image copy is not supported on ${process.platform}.`);
   const filePath = join(tmpdir(), `clip-history-${Date.now()}.png`);
   await writeFile(filePath, png);
-  await runProcess('osascript', ['-e', `set the clipboard to (read (POSIX file "${escapeAppleScriptString(filePath)}") as «class PNGf»)`]);
+  try {
+    await runProcess('osascript', ['-e', `set the clipboard to (read (POSIX file "${escapeAppleScriptString(filePath)}") as «class PNGf»)`]);
+  } finally {
+    await unlink(filePath).catch(() => undefined);
+  }
 }
 
 async function runFirstAvailable(candidates: { command: string; args: string[]; input: string | Buffer }[]) {
@@ -206,7 +217,7 @@ async function copySelected() {
 }
 
 function quit() {
-  process.stdin.setRawMode(false);
+  if (process.stdin.isTTY) process.stdin.setRawMode(false);
   process.stdin.pause();
   process.stdout.write('\x1b[?25h');
   process.stdout.write(clear);
@@ -246,6 +257,11 @@ async function handleKey(input: Buffer) {
 }
 
 async function main() {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    process.stderr.write('Clip History TUI requires an interactive terminal.\n');
+    process.exitCode = 1;
+    return;
+  }
   await loadHistory();
   process.stdout.write('\x1b[?25l');
   process.stdin.setRawMode(true);

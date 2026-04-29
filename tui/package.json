@@ -11,8 +11,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "tsx": "^4.21.0"
-  },
-  "devDependencies": {}
+  }
 }

@@ -19,6 +19,8 @@ type ClipItem = {
 const HISTORY_LIMIT = 200;
 const POLL_INTERVAL_MS = 750;
 
+app.setName('Clip History');
+
 let mainWindow: BrowserWindow | null = null;
 let history: ClipItem[] = [];
 let lastSignature = '';
